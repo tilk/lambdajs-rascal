@@ -26,7 +26,31 @@ layout LAYOUTLIST
   !>> "/*"
   !>> "//" ;
 
-lexical Int = [0-9]+;
+lexical Int = [a-zA-Z$_0-9] !<< [0-9]+;
+
+syntax Number
+  = [a-zA-Z$_0-9] !<< Decimal
+  ;
+
+lexical Decimal
+  = DecimalInteger [.] [0-9]* ExponentPart?
+  | [.] [0-9]+ ExponentPart?
+  | DecimalInteger ExponentPart?
+  ;
+
+lexical DecimalInteger
+  = [0]
+  | [1-9][0-9]*
+  !>> [0-9]
+  ;
+
+lexical ExponentPart
+  = [eE] SignedInteger
+  ;
+
+lexical SignedInteger
+  = [+\-]? [0-9]+ !>> [0-9]
+  ;
 
 lexical String
   = [\"] DoubleStringChar* [\"]
@@ -43,7 +67,7 @@ lexical SingleStringChar
   | [\\] EscapeSequence
   ;
 
-lexical Id = ([a-zA-Z$_0-9] !<< [$%#_a-zA-Z] [a-zA-Z$_0-9]* !>> [a-zA-Z$_0-9]) \ Reserved;
+lexical Id = ([a-zA-Z$_0-9] !<< [$%#_a-zA-Z] [a-zA-Z$_0-9\-]* !>> [a-zA-Z$_0-9\-]) \ Reserved;
 
 keyword Reserved 
   = "NaN"
@@ -64,6 +88,7 @@ keyword Reserved
   | "finally"
   | "throw"
   | "typeof"
+  | "prim"
   | "object?"
   | "primitive?"
   | "closure?"
@@ -82,7 +107,7 @@ keyword Reserved
 syntax Bool = "true" | "false";
 
 syntax Numeric =
-  | Int
+  | Number
   | "NaN"
   | "inf"
   ;
@@ -117,16 +142,23 @@ syntax OattrDef = oattrDef: Oattr ":" Expr | iattrDef: Id ":" Expr;
 
 syntax PattrDef = pattrDef: Pattr Expr; 
 
-syntax Attr = Id ":" "{" {PattrDef ","}* "}"; 
+syntax AttrName = String | Id;
+
+syntax Attr = AttrName ":" "{" {PattrDef ","}* "}"; 
 
 syntax Expr 
   = literal : Literal
+  | id: Id
   | bracket paren: "(" Expr ")"
   | bracket brkt: "{" Expr "}"
   | obj: "{" "[" {OattrDef ","}* "]" {Attr ","}* "}"
   | func: "func" "(" {Id ","}* ")" "{" Expr "}"
   | failure: "fail" "(" String ")"
+  | primUnary: "prim" "(" String "," Expr ")"
+  | primBinary: "prim" "(" String "," Expr "," Expr ")"
+  | eval: "@eval" "(" Expr "," Expr ")"
   > typeof: "typeof" Expr
+  | not: "!" Expr
   | isobject: "object?" Expr
   | isprimitive: "primitive?" Expr
   | isclosure: "closure?" Expr
@@ -137,6 +169,7 @@ syntax Expr
   | ifThen: "if" "(" Expr ")" Expr !>> "else"
   | attrGet: Expr "[" Expr "\<" Pattr "\>" "]"
   | attrSet: Expr "[" Expr "\<" Pattr "\>" "=" Expr "]"
+  | attrDel: Expr "[" "delete" Expr "]"
   | oattrGet: Expr "[" "\<" Oattr "\>" "]"
   | oattrSet: Expr "[" "\<" Oattr "\>" "=" Expr "]"
   | iattrGet: Expr "[" "\<" Id "\>" "]"
