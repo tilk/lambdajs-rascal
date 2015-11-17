@@ -106,10 +106,11 @@ keyword Reserved
 
 syntax Bool = "true" | "false";
 
-syntax Numeric =
-  | Number
+syntax Numeric 
+  = Number
   | "NaN"
-  | "inf"
+  | "+inf"
+  | "-inf"
   ;
 
 syntax Literal 
@@ -154,11 +155,12 @@ syntax Expr
   | obj: "{" "[" {OattrDef ","}* "]" {Attr ","}* "}"
   | func: "func" "(" {Id ","}* ")" "{" Expr "}"
   | failure: "fail" "(" String ")"
-  | primUnary: "prim" "(" String "," Expr ")"
-  | primBinary: "prim" "(" String "," Expr "," Expr ")"
+  | unary: "prim" "(" String "," Expr ")"
+  | binary: "prim" "(" String "," Expr "," Expr ")"
   | eval: "@eval" "(" Expr "," Expr ")"
   > typeof: "typeof" Expr
   | not: "!" Expr
+  | neg: "-" Expr
   | isobject: "object?" Expr
   | isprimitive: "primitive?" Expr
   | isclosure: "closure?" Expr
@@ -173,7 +175,6 @@ syntax Expr
   | oattrGet: Expr "[" "\<" Oattr "\>" "]"
   | oattrSet: Expr "[" "\<" Oattr "\>" "=" Expr "]"
   | iattrGet: Expr "[" "\<" Id "\>" "]"
-  | iattrSet: Expr "[" "\<" Id "\>" "=" Expr "]"
   > left 
     ( mul : Expr "*" Expr
     | div : Expr "/" Expr)
@@ -206,4 +207,9 @@ syntax EnvDef
 start syntax Prog = prog: Expr;
 
 start syntax Env = env: EnvDef*;
+
+bool isValue((Expr)`<Literal l>`) = true;
+bool isValue((Expr)`<Id id>`) = true;
+bool isValue((Expr)`func (<{Id ","}* ids>) { <Expr e> }`) = true;
+default bool isValue(Expr e) = false;
 

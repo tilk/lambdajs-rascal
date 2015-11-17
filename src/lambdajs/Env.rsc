@@ -4,6 +4,6 @@ import lambdajs::Syntax;
 import ParseTree;
 import IO;
 
-public Env parseEnv(str txt) = parse(#start[Env], txt).top;
+public start[Env] parseEnv(str txt) = parse(#start[Env], txt);
 
-public Env parseEnvFile(loc fname) = parseEnv(readFile(fname));
+public start[Env] parseEnvFile(loc fname) = parse(#start[Env], fname);
