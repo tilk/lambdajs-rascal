@@ -15,8 +15,8 @@ private int newSeq() {
   return seq; 
 }
 
-start[Env] freshen(Scope scope, start[Env] tree) =
-  top-down visit (tree) {
+tuple[Scope, start[Env]] freshen(Scope scope, start[Env] tree) {
+  tree = top-down visit (tree) {
     case ed: (EnvDef) `let [<Id i>] = <Expr e>`: {
       s = newSeq();
       i = i[@seq = s];
@@ -36,6 +36,8 @@ start[Env] freshen(Scope scope, start[Env] tree) =
       insert ed[e=e];
     }
   };
+  return <scope, tree>;
+}
 
 start[Prog] freshen(Scope scope, start[Prog] tree) =
   visit (tree) {
@@ -81,3 +83,25 @@ Expr freshen(Scope scope, Expr tree) =
       insert e[i=i];
     }
   };
+
+private map[int, Expr] mkSubstMap(map[Id, Expr] s) = (i@seq: freshen((), s[i]) | i <- s);
+
+Expr substs(Expr e, map[Id, Expr] s) {
+  map[int, Expr] ss = mkSubstMap(s);
+  return visit(e) {
+    case (Expr) `<Id i>`: {
+      if (i@seq in ss) insert ss[i@seq];
+    }
+  }
+}
+
+Expr substsAll(Expr e, map[Id, Expr] s) {
+  map[int, Expr] ss = mkSubstMap(s);
+  return outermost visit(e) {
+    case (Expr) `<Id i>`: {
+      if (i@seq in ss) insert ss[i@seq];
+    }
+  }
+}
+
+Expr subst(Expr e, Id i, Expr e2) = substs(e, (i: e2));
