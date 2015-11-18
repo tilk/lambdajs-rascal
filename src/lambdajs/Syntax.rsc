@@ -89,9 +89,11 @@ keyword Reserved
   | "throw"
   | "typeof"
   | "prim"
+  | "fail"
   | "object?"
   | "primitive?"
   | "closure?"
+  | "get-own-field-names"
   | "#value"
   | "#writable"
   | "#getter"
@@ -147,64 +149,67 @@ syntax AttrName = String | Id;
 
 syntax Attr = AttrName ":" "{" {PattrDef ","}* "}"; 
 
+syntax Func = "func" "(" {Id ","}* is ")" "{" Expr e "}";
+
 syntax Expr 
-  = literal : Literal
-  | id: Id
-  | bracket paren: "(" Expr ")"
-  | bracket brkt: "{" Expr "}"
+  = literal : Literal lit
+  | id: Id i
+  | bracket paren: "(" Expr e ")"
+  | bracket brkt: "{" Expr e "}"
   | obj: "{" "[" {OattrDef ","}* "]" {Attr ","}* "}"
-  | func: "func" "(" {Id ","}* ")" "{" Expr "}"
-  | failure: "fail" "(" String ")"
-  | unary: "prim" "(" String "," Expr ")"
-  | binary: "prim" "(" String "," Expr "," Expr ")"
-  | eval: "@eval" "(" Expr "," Expr ")"
-  > typeof: "typeof" Expr
-  | not: "!" Expr
-  | neg: "-" Expr
-  | isobject: "object?" Expr
-  | isprimitive: "primitive?" Expr
-  | isclosure: "closure?" Expr
-  | app: Expr "(" {Expr ","}* ")"
-  | let: "let" "(" Id "=" Expr ")" Expr
-  | rec: "rec" "(" Id "=" Expr ")" Expr
-  | ifThenElse: "if" "(" Expr ")" Expr "else" Expr
-  | ifThen: "if" "(" Expr ")" Expr !>> "else"
-  | attrGet: Expr "[" Expr "\<" Pattr "\>" "]"
-  | attrSet: Expr "[" Expr "\<" Pattr "\>" "=" Expr "]"
-  | attrDel: Expr "[" "delete" Expr "]"
-  | oattrGet: Expr "[" "\<" Oattr "\>" "]"
-  | oattrSet: Expr "[" "\<" Oattr "\>" "=" Expr "]"
-  | iattrGet: Expr "[" "\<" Id "\>" "]"
+  | func: Func f
+  | failure: "fail" "(" String s ")"
+  | unary: "prim" "(" String n "," Expr e ")"
+  | binary: "prim" "(" String n "," Expr e1 "," Expr e2 ")"
+  | eval: "@eval" "(" Expr e1 "," Expr e2 ")"
+  | gofn: "get-own-field-names" "(" Expr e ")"
+  > typeof: "typeof" Expr e
+  | not: "!" Expr e
+  | neg: "-" Expr e
+  | isobject: "object?" Expr e
+  | isprimitive: "primitive?" Expr e
+  | isclosure: "closure?" Expr e
+  | app: Expr e "(" {Expr ","}* es ")"
+  | ifThenElse: "if" "(" Expr e ")" Expr e1 "else" Expr e2
+  | ifThen: "if" "(" Expr e ")" Expr e1 !>> "else"
+  | attrGet: Expr e "[" Expr e1 "\<" Pattr pa "\>" "]"
+  | attrSet: Expr e "[" Expr e1 "\<" Pattr pa "\>" "=" Expr "]"
+  | attrDel: Expr e "[" "delete" Expr e1 "]"
+  | oattrGet: Expr e "[" "\<" Oattr oa "\>" "]"
+  | oattrSet: Expr e "[" "\<" Oattr oa "\>" "=" Expr e1 "]"
+  | iattrGet: Expr e "[" "\<" Id i "\>" "]"
   > left 
-    ( mul : Expr "*" Expr
-    | div : Expr "/" Expr)
+    ( mul : Expr e1 "*" Expr e2
+    | div : Expr e1 "/" Expr e2)
   > left 
-    ( add : Expr "+" Expr
-    | sub : Expr "-" Expr)
+    ( add : Expr e1 "+" Expr e2
+    | sub : Expr e1 "-" Expr e2)
   > non-assoc 
-    ( eq: Expr "==" Expr
-    | neq: Expr "!=" Expr
-    | sv: Expr "===" Expr
-    | nsv: Expr "!==" Expr)
-  > left and: Expr "&&" Expr
-  | left or: Expr "||" Expr
-  > throwEx: "throw" Expr
-  | breakEx: "break" Id Expr
-  | tryCatch: "try" Expr "catch" Expr
-  | tryFinally: "try" Expr "finally" Expr
-  | label: "label" Id ":" Expr
+    ( eq: Expr e1 "==" Expr e2
+    | neq: Expr e1 "!=" Expr e2
+    | sv: Expr e1 "===" Expr e2
+    | nsv: Expr e1 "!==" Expr e2)
+  > left and: Expr e1 "&&" Expr e2
+  | left or: Expr e1 "||" Expr e2
+  > throwEx: "throw" Expr e
+  | breakEx: "break" Id i Expr e
+  | tryCatch: "try" Expr e1 "catch" Expr e2
+  | tryFinally: "try" Expr e1 "finally" Expr e2
+  | label: "label" Id i ":" Expr e
+  > let: "let" "(" Id i "=" Expr e1 ")" Expr e2
+  | rec: "rec" "(" Id i "=" Expr e1 ")" Expr e2
   > right
-    ( fseq: Expr ";" Expr
-    | seq: Expr ";;" Expr)
+    ( fseq: Expr e1 ";" Expr e2
+    | seq: Expr e1 ";;" Expr e2)
   ;
 
 syntax EnvDef 
-  = env_let: "let" "[" Id "]" "=" Expr
-  | env_rec: "rec" "[" Id "]" "=" Expr
-  | env_block: "{" Expr "}"
+  = env_let: "let" "[" Id i "]" "=" Expr e
+  | env_rec: "rec" "[" Id i "]" "=" Expr e
+  | env_block: "{" Expr e "}"
   ;
 
-start syntax Prog = prog: Expr;
+start syntax Prog = prog: Expr e;
 
 start syntax Env = env: EnvDef*;
 
