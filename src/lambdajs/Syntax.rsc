@@ -3,6 +3,8 @@ Marek Materzok <tilk@tilk.eu>
 }
 module lambdajs::Syntax
 
+import String;
+
 lexical Whitespace = [\t\n\ \r\f];
 
 lexical Comment
@@ -53,20 +55,53 @@ lexical SignedInteger
   ;
 
 lexical String
-  = [\"] DoubleStringChar* [\"]
-  | [\'] SingleStringChar* [\']
+  = [\"] Char* chars [\"]
   ;
   
-lexical DoubleStringChar
-  = ![\"\\\n]
-  | [\\] EscapeSequence
+lexical Char
+  = simple: ![\"\\\n] ch
+  | escape: [\\] EscapeSequence esc
   ;
 
-lexical SingleStringChar
-  = ![\'\\\n]
-  | [\\] EscapeSequence
+lexical EscapeSequence
+  = CharacterEscapeSequence
+  | [0] !>> [0-9]
+  | "x" HexEscapeSequence s
+  | "u" UnicodeEscapeSequence s
   ;
 
+lexical CharacterEscapeSequence
+  = SingleEscapeCharacter
+  | NonEscapeCharacter
+  ;
+
+lexical SingleEscapeCharacter
+  = [\'\"\\bfnrtv]
+  ;
+
+lexical NonEscapeCharacter
+  // SourceCharacter but not one of EscapeCharacter or LineTerminator
+  = ![\n\'\"\\bfnrtv0-9xu]
+  ;
+
+lexical EscapeCharacter
+  = SingleEscapeCharacter
+  | [0-9]
+  | [xu]
+  ;
+
+lexical HexDigit
+  = [a-fA-F0-9]
+  ;
+
+lexical HexEscapeSequence
+  = HexDigit HexDigit
+  ;
+
+syntax UnicodeEscapeSequence
+  = HexDigit HexDigit HexDigit HexDigit
+  ;
+  
 lexical Id = ([a-zA-Z$_0-9] !<< [$%#_a-zA-Z] [a-zA-Z$_0-9\-]* !>> [a-zA-Z$_0-9\-]) \ Reserved;
 
 keyword Reserved 
@@ -151,13 +186,17 @@ syntax Attr = AttrName ":" "{" {PattrDef ","}* "}";
 
 syntax Func = "func" "(" {Id ","}* is ")" "{" Expr e "}";
 
-syntax Expr 
-  = literal : Literal lit
+syntax Value
+  = literal: Literal lit
   | id: Id i
+  | func: Func f
+  ;
+
+syntax Expr 
+  = val: Value v
   | bracket paren: "(" Expr e ")"
   | bracket brkt: "{" Expr e "}"
   | obj: "{" "[" {OattrDef ","}* "]" {Attr ","}* "}"
-  | func: Func f
   | failure: "fail" "(" String s ")"
   | unary: "prim" "(" String n "," Expr e ")"
   | binary: "prim" "(" String n "," Expr e1 "," Expr e2 ")"
@@ -213,8 +252,18 @@ start syntax Prog = prog: Expr e;
 
 start syntax Env = env: EnvDef*;
 
-bool isValue((Expr)`<Literal l>`) = true;
-bool isValue((Expr)`<Id id>`) = true;
-bool isValue((Expr)`func (<{Id ","}* ids>) { <Expr e> }`) = true;
+bool isValue((Expr)`<Value v>`) = true;
 default bool isValue(Expr e) = false;
 
+str charValue(Char c) {
+  if (c has ch) return "<c>";
+  else return ""; // TODO escape sequences
+}
+
+str stringValue(String s) = "<for (c <- s.chars) {><charValue(c)><}>";
+
+bool boolValue((Bool) `true`) = true;
+bool boolValue((Bool) `false`) = false;
+
+Bool mkBool(true) = (Bool) `true`;
+Bool mkBool(false) = (Bool) `false`;

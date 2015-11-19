@@ -59,7 +59,7 @@ Expr freshen(Scope scope, Expr tree) =
         } 
       };
       fe = freshen(scope + newscope, f.e);
-      insert e[f=f[e=fe][is=is]];
+      insert e[v=e.v[f=f[e=fe][is=is]]];
     }
     case e: (Expr) `let (<Id i> = <Expr e1>) <Expr e2>`: {
       s = newSeq();
@@ -80,7 +80,7 @@ Expr freshen(Scope scope, Expr tree) =
       if ("<i>" in scope) 
         i = i[@seq = scope["<i>"]];
       i@seq; // TODO better test for presence of @seq
-      insert e[i=i];
+      insert e[v=e.v[i=i]];
     }
   };
 
@@ -88,7 +88,7 @@ private map[int, Expr] mkSubstMap(map[Id, Expr] s) = (i@seq: freshen((), s[i]) |
 
 Expr substs(Expr e, map[Id, Expr] s) {
   map[int, Expr] ss = mkSubstMap(s);
-  return visit(e) {
+  return visit(freshen((), e)) {
     case (Expr) `<Id i>`: {
       if (i@seq in ss) insert ss[i@seq];
     }
@@ -97,7 +97,7 @@ Expr substs(Expr e, map[Id, Expr] s) {
 
 Expr substsAll(Expr e, map[Id, Expr] s) {
   map[int, Expr] ss = mkSubstMap(s);
-  return outermost visit(e) {
+  return outermost visit(freshen((), e)) {
     case (Expr) `<Id i>`: {
       if (i@seq in ss) insert ss[i@seq];
     }

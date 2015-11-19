@@ -1,5 +1,6 @@
 module lambdajs::Process
 
+import IO;
 import lambdajs::Syntax;
 import lambdajs::Env;
 import lambdajs::FreshNames;
