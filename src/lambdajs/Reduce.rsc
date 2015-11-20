@@ -14,21 +14,39 @@ opt[Expr] reduce((Expr) `func(<{Id ","}* is>) {<Expr body>} (<{Expr ","}* es>)`)
   return some(substs(body, s));
 }
 
-opt[Expr] reduce((Expr) `let (<Id i> = <Value e1>) <Expr e2>`) = some(subst(e2, i, (Expr)`<Value e1>`));
+opt[Expr] reduce((Expr) `let (<Id i> = <Expr e1>) <Expr e2>`) {
+  if (!isValue(e1)) return none();
+  return some(subst(e2, i, e1));
+}
 
 opt[Expr] reduce((Expr) `if (true) <Expr e1> else <Expr e2>`) = some(e1);
 opt[Expr] reduce((Expr) `if (false) <Expr e1> else <Expr e2>`) = some(e2);
 
-opt[Expr] reduce((Expr) `<Value e1>; <Expr e2>`) = some(e2); 
+opt[Expr] reduce((Expr) `<Expr e1>; <Expr e2>`) {
+  if (!isValue(e1)) return none();
+  return some(e2);
+} 
 
-opt[Expr] reduce((Expr) `<Value e1>;; <Value e2>`) = some(e2);
+opt[Expr] reduce((Expr) `<Expr e1>;; <Expr e2>`) {
+  if (!isValue(e1) || !isValue(e2)) return none();
+  return some(e2);
+}
 opt[Expr] reduce((Expr) `empty;; <Expr e>`) = some(e);
 opt[Expr] reduce((Expr) `<Expr e>;; empty`) = some(e);
 
-opt[Expr] reduce((Expr) `try <Expr e1> finally <Value e2>`) = some(e1);
-opt[Expr] reduce((Expr) `try <Value e1> finally <Expr e2>`) = some((Expr) `<Expr e2>; <Value e1>`);
+opt[Expr] reduce((Expr) `try <Expr e1> finally <Expr e2>`) {
+  if (!isValue(e2)) fail;
+  return some(e1);
+}
+opt[Expr] reduce((Expr) `try <Expr e1> finally <Expr e2>`) {
+  if (!isValue(e1)) fail;
+  some((Expr) `<Expr e2>; <Expr e1>`);
+}
 
-opt[Expr] reduce((Expr) `try <Value e1> catch <Expr e2>`) = some(e1);
+opt[Expr] reduce((Expr) `try <Expr e1> catch <Expr e2>`) {
+  if (!isValue(e1)) fail;
+  some(e1);
+}
 
 opt[Expr] reduce((Expr) `prim ("object?", <Literal l>)`) = some((Expr) `false`);
 opt[Expr] reduce((Expr) `prim ("object?", <Func f>)`) = some((Expr) `false`);
@@ -44,22 +62,14 @@ opt[Expr] reduce((Expr) `prim ("typeof", <Bool b>)`) = some((Expr) `"boolean"`);
 opt[Expr] reduce((Expr) `prim ("typeof", undefined)`) = some((Expr) `"undefined"`);
 opt[Expr] reduce((Expr) `prim ("typeof", null)`) = some((Expr) `"null"`);
 
-opt[Expr] reduce((Expr) `prim ("==", <String s1>, <String s2>)`) {
-  b = mkBool(stringValue(s1) == stringValue(s2));
-  return some((Expr) `<Bool b>`);
-}
-
-opt[Expr] reduce((Expr) `prim ("==", <Bool b1>, <Bool b2>)`) {
-  b = mkBool(boolValue(b1) == boolValue(b2));
-  return some((Expr) `<Bool b>`);
-}
-
+opt[Expr] reduce((Expr) `prim ("==", <String s1>, <String s2>)`) = some(mkBoolExpr(stringValue(s1) == stringValue(s2)));
+opt[Expr] reduce((Expr) `prim ("==", <Bool b1>, <Bool b2>)`) = some(mkBoolExpr(boolValue(b1) == boolValue(b2)));
 opt[Expr] reduce((Expr) `prim ("==", undefined, undefined)`) = some((Expr) `true`);
 opt[Expr] reduce((Expr) `prim ("==", null, null)`) = some((Expr) `true`);
 opt[Expr] reduce((Expr) `prim ("==", empty, empty)`) = some((Expr) `true`);
 
-opt[Expr] reduce((Expr) `prim ("===", <String s1>, <String s2>)`) = mkBool(stringValue(s1) == stringValue(s2));
-opt[Expr] reduce((Expr) `prim ("===", <Bool b1>, <Bool b2>)`) = mkBool(boolValue(b1) == boolValue(b2));
+opt[Expr] reduce((Expr) `prim ("===", <String s1>, <String s2>)`) = some(mkBoolExpr(stringValue(s1) == stringValue(s2)));
+opt[Expr] reduce((Expr) `prim ("===", <Bool b1>, <Bool b2>)`) = some(mkBoolExpr(boolValue(b1) == boolValue(b2)));
 opt[Expr] reduce((Expr) `prim ("===", undefined, undefined)`) = some((Expr) `true`);
 opt[Expr] reduce((Expr) `prim ("===", null, null)`) = some((Expr) `true`);
 opt[Expr] reduce((Expr) `prim ("===", empty, empty)`) = some((Expr) `true`);

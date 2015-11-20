@@ -186,16 +186,12 @@ syntax Attr = AttrName ":" "{" {PattrDef ","}* "}";
 
 syntax Func = "func" "(" {Id ","}* is ")" "{" Expr e "}";
 
-syntax Value
-  = literal: Literal lit
+syntax Expr 
+  = bracket paren: "(" Expr e ")"
+  | bracket brkt: "{" Expr e "}"
+  | literal: Literal lit
   | id: Id i
   | func: Func f
-  ;
-
-syntax Expr 
-  = val: Value v
-  | bracket paren: "(" Expr e ")"
-  | bracket brkt: "{" Expr e "}"
   | obj: "{" "[" {OattrDef ","}* "]" {Attr ","}* "}"
   | failure: "fail" "(" String s ")"
   | unary: "prim" "(" String n "," Expr e ")"
@@ -252,7 +248,9 @@ start syntax Prog = prog: Expr e;
 
 start syntax Env = env: EnvDef*;
 
-bool isValue((Expr)`<Value v>`) = true;
+bool isValue((Expr)`<Literal l>`) = true;
+bool isValue((Expr)`<Id i>`) = true;
+bool isValue((Expr)`<Func f>`) = true;
 default bool isValue(Expr e) = false;
 
 str charValue(Char c) {
@@ -267,3 +265,8 @@ bool boolValue((Bool) `false`) = false;
 
 Bool mkBool(true) = (Bool) `true`;
 Bool mkBool(false) = (Bool) `false`;
+
+Expr mkBoolExpr(bool bv) {
+  b = mkBool(bv);
+  return (Expr)`<Bool b>`;
+}
