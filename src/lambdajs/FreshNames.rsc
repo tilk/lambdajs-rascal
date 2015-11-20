@@ -2,6 +2,7 @@ module lambdajs::FreshNames
 
 import ParseTree;
 import IO;
+import Option;
 import lambdajs::Syntax;
 
 anno int Tree@seq; // TODO: somehow does not work on Id
@@ -86,22 +87,32 @@ Expr freshen(Scope scope, Expr tree) =
 
 private map[int, Expr] mkSubstMap(map[Id, Expr] s) = (i@seq: freshen((), s[i]) | i <- s);
 
-Expr substs(Expr e, map[Id, Expr] s) {
+alias subst = opt[Expr](Id);
+
+subst mkSubst(map[Id, Expr] s) {
   map[int, Expr] ss = mkSubstMap(s);
+  opt[Expr] f(Id i) { if(i@seq in ss) return some(ss[i@seq]); else return none(); };
+  return f;
+}
+
+Expr substs(Expr e, subst s) {
+  return visit(freshen((), e)) {
+    case (Expr) `<Id i>`: { 
+      opt[Expr] r = s(i);
+      if (isNone(r)) fail;
+      else switch (r) { case some(rr): insert rr; };
+    }
+  }
+}
+
+Expr substsAll(Expr e, subst s) {
   return visit(freshen((), e)) {
     case (Expr) `<Id i>`: {
-      if (i@seq in ss) insert ss[i@seq];
+      opt[Expr] r = s(i);
+      if (isNone(r)) fail;
+      else switch (r) { case some(rr): insert substsAll(rr, s); };
     }
   }
 }
 
-Expr substsAll(Expr e, map[Id, Expr] s) {
-  map[int, Expr] ss = mkSubstMap(s);
-  return outermost visit(freshen((), e)) {
-    case (Expr) `<Id i>`: {
-      if (i@seq in ss) insert ss[i@seq];
-    }
-  }
-}
-
-Expr subst(Expr e, Id i, Expr e2) = substs(e, (i: e2));
+Expr subst(Expr e, Id i, Expr e2) = substs(e, mkSubst((i: e2)));

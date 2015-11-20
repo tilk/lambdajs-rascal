@@ -13,7 +13,8 @@ start[Prog] process(loc envloc, start[Prog] prog) {
   <scope, env> = freshen((), env);
   prog = freshen(scope, prog);
   lf = letFuncs(env);
-  prog = visit(prog) { case Expr e => substsAll(e, lf) };
+  lfs = mkSubst(lf);
+  prog = visit(prog) { case Expr e => substsAll(e, lfs) };
   prog = visit(prog) { case Expr e => reduceAll(e) };
   return prog;
 }

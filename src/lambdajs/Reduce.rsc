@@ -12,7 +12,7 @@ opt[Expr] reduce((Expr) `func(<{Id ","}* is>) {<Expr body>} (<{Expr ","}* es>)`)
   for (e <- esl) if (!isValue(e)) return none(); 
   try s = (i: e | <i, e> <- zip(isl, esl));
   catch: return none();
-  return some(substs(body, s));
+  return some(substs(body, mkSubst(s)));
 }
 
 opt[Expr] reduce((Expr) `let (<Id i> = <Value e1>) <Expr e2>`) = some(subst(e2, i, (Expr)`<Value e1>`));
