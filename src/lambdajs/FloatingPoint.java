@@ -25,4 +25,11 @@ public class FloatingPoint {
     	double v = Double.parseDouble(s1.getValue()) / Double.parseDouble(s2.getValue());
     	return vf.string(Double.toString(v));
     };
+    public IValue negFP(IString s) {
+    	double v = -Double.parseDouble(s.getValue());
+    	return vf.string(Double.toString(v));
+    };
+    public IValue ltFP(IString s1, IString s2) {
+    	return vf.bool(Double.parseDouble(s1.getValue()) < Double.parseDouble(s2.getValue()));
+    }
 };

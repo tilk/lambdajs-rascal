@@ -4,6 +4,7 @@ Marek Materzok <tilk@tilk.eu>
 module lambdajs::Syntax
 
 import String;
+import Option;
 import lambdajs::FloatingPoint;
 
 lexical Whitespace = [\t\n\ \r\f];
@@ -32,8 +33,12 @@ layout LAYOUTLIST
 lexical Int = [a-zA-Z$_0-9] !<< [0-9]+;
 
 syntax Number
-  = [a-zA-Z$_0-9] !<< Decimal
+  = [a-zA-Z$_0-9] !<< SignedDecimal
   ;
+
+lexical SignedDecimal = "-"? Decimal;
+
+lexical NegativeDecimal = "-" Decimal;
 
 lexical Decimal
   = DecimalInteger [.] [0-9]* ExponentPart?
@@ -104,6 +109,8 @@ syntax UnicodeEscapeSequence
   ;
   
 lexical Id = ([a-zA-Z$_0-9] !<< [$%#_a-zA-Z] [a-zA-Z$_0-9\-]* !>> [a-zA-Z$_0-9\-]) \ Reserved;
+
+lexical UnaryMinus = "-" !>> [0-9.];
 
 keyword Reserved 
   = "NaN"
@@ -205,7 +212,7 @@ syntax Expr
   | gofn: "get-own-field-names" "(" Expr e ")"
   > typeof: "typeof" Expr e
   | not: "!" Expr e
-  | neg: "-" Expr e
+  | neg: UnaryMinus Expr e
   | isobject: "object?" Expr e
   | isprimitive: "primitive?" Expr e
   | isclosure: "closure?" Expr e
@@ -291,3 +298,19 @@ Expr mkNumericExpr(float f) {
   Numeric n = mkNumeric(f);
   return (Expr)`<Numeric n>`;
 }
+
+data Type = ObjectType() | NumericType() | StringType() | FunctionType() | BoolType() 
+          | UndefinedType() | NullType() | EmptyType();
+
+Type literalType((Literal) `<Numeric n>`) = NumericType();
+Type literalType((Literal) `<String s>`) = StringType();
+Type literalType((Literal) `<Bool b>`) = BoolType();
+Type literalType((Literal) `undefined`) = UndefinedType();
+Type literalType((Literal) `null`) = NullType();
+Type literalType((Literal) `empty`) = EmptyType();
+
+opt[Type] valueType((Value) `<Literal l>`) = some(literalType(l));
+opt[Type] valueType((Value) `<Id i>`) = none();
+opt[Type] valueType((Value) `func (<{Id ","}* ids>) {<Expr e>}`) = some(FunctionType());
+
+

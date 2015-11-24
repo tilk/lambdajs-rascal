@@ -52,17 +52,25 @@ opt[Expr] reduceBinary("===", (Expr) `<String s1>`, (Expr) `<String s2>`) =
   some(mkBoolExpr(stringValue(s1) == stringValue(s2)));
 opt[Expr] reduceBinary("===", (Expr) `<Bool b1>`, (Expr) `<Bool b2>`) = 
   some(mkBoolExpr(boolValue(b1) == boolValue(b2)));
+opt[Expr] reduceBinary("===", (Expr) `<Numeric n1>`, (Expr) `<Numeric n2>`) = 
+  some(mkBoolExpr(numericValue(n1) == numericValue(n2)));
 opt[Expr] reduceBinary("===", (Expr) `undefined`, (Expr) `undefined`) = some((Expr) `true`);
 opt[Expr] reduceBinary("===", (Expr) `null`, (Expr) `null`) = some((Expr) `true`);
 opt[Expr] reduceBinary("===", (Expr) `empty`, (Expr) `empty`) = some((Expr) `true`);
+opt[Expr] reduceBinary("==", (Expr) `<Value v1>`, (Expr) `<Value v2>`) = some((Expr) `false`)
+  when valueType(v1) != valueType(v2);
 
 opt[Expr] reduceBinary("==", (Expr) `<String s1>`, (Expr) `<String s2>`) = 
   some(mkBoolExpr(stringValue(s1) == stringValue(s2)));
 opt[Expr] reduceBinary("==", (Expr) `<Bool b1>`, (Expr) `<Bool b2>`) = 
   some(mkBoolExpr(boolValue(b1) == boolValue(b2)));
+opt[Expr] reduceBinary("==", (Expr) `<Numeric n1>`, (Expr) `<Numeric n2>`) = 
+  some(mkBoolExpr(numericValue(n1) == numericValue(n2)));
 opt[Expr] reduceBinary("==", (Expr) `undefined`, (Expr) `undefined`) = some((Expr) `true`);
 opt[Expr] reduceBinary("==", (Expr) `null`, (Expr) `null`) = some((Expr) `true`);
-opt[Expr] reduceBinary("==", (Expr) `mpty`, (Expr) `empty`) = some((Expr) `true`);
+opt[Expr] reduceBinary("==", (Expr) `empty`, (Expr) `empty`) = some((Expr) `true`);
+opt[Expr] reduceBinary("==", (Expr) `<Value v1>`, (Expr) `<Value v2>`) = some((Expr) `false`)
+  when valueType(v1) != valueType(v2);
 
 opt[Expr] reduceBinary("+", (Expr) `<Numeric n1>`, (Expr) `<Numeric n2>`) = 
   some(mkNumericExpr(addFP(numericValue(n1), numericValue(n2))));
@@ -73,7 +81,13 @@ opt[Expr] reduceBinary("*", (Expr) `<Numeric n1>`, (Expr) `<Numeric n2>`) =
 opt[Expr] reduceBinary("/", (Expr) `<Numeric n1>`, (Expr) `<Numeric n2>`) = 
   some(mkNumericExpr(divFP(numericValue(n1), numericValue(n2))));
 
+opt[Expr] reduceBinary("\<", (Expr) `<Numeric n1>`, (Expr) `<Numeric n2>`) = 
+  some(mkBoolExpr(ltFP(numericValue(n1), numericValue(n2))));
+
 default opt[Expr] reduceBinary(str s, Expr e1, Expr e2) = none();
+
+opt[Expr] reduceUnary("-", (Expr)`<Numeric n>`) =
+  some(mkNumericExpr(negFP(numericValue(n))));
 
 opt[Expr] reduceUnary("object?", (Expr)`<Literal l>`) = some((Expr) `false`);
 opt[Expr] reduceUnary("object?", (Expr)`<Func f>`) = some((Expr) `false`);
@@ -90,7 +104,7 @@ opt[Expr] reduceUnary("typeof", (Expr) `null`) = some((Expr) `"null"`);
 default opt[Expr] reduceUnary(str s, Expr e) = none();
 
 Expr reduceAll(subst s, Expr e) = 
-  bottom-up visit (e) { 
+  innermost visit (e) { 
     case Expr e1: {
       switch(reduce(s, e1)) {
         case some(e2): insert reduceAll(s, e2);

@@ -15,6 +15,6 @@ start[Prog] process(loc envloc, start[Prog] prog) {
   lf = letFuncs(env);
   lfs = mkSubst(lf);
 //  prog = visit(prog) { case Expr e => substsAll(e, lfs) };
-  prog = visit(prog) { case Expr e => reduceAll(lfs, e) };
+  prog = top-down-break visit(prog) { case Expr e => reduceAll(lfs, e) };
   return prog;
 }
