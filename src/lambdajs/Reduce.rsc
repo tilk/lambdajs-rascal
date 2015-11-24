@@ -26,6 +26,9 @@ opt[Expr] reduce(subst sub, (Expr) `func(<{Id ","}* is>) {<Expr body>} (<{Expr "
 
 opt[Expr] reduce(subst sub, (Expr) `let (<Id i> = <Value e1>) <Expr e2>`) = some(subst(e2, i, (Expr)`<Value e1>`));
 
+opt[Expr] reduce(subst sub, (Expr) `let (<Id i1> = <Expr e>) <Id i2>`) = some(e)
+  when i1@seq == i2@seq;
+
 opt[Expr] reduce(subst sub, (Expr) `if (true) <Expr e1> else <Expr e2>`) = some(e1);
 opt[Expr] reduce(subst sub, (Expr) `if (false) <Expr e1> else <Expr e2>`) = some(e2);
 
@@ -69,7 +72,7 @@ opt[Expr] reduceBinary("==", (Expr) `<Numeric n1>`, (Expr) `<Numeric n2>`) =
 opt[Expr] reduceBinary("==", (Expr) `undefined`, (Expr) `undefined`) = some((Expr) `true`);
 opt[Expr] reduceBinary("==", (Expr) `null`, (Expr) `null`) = some((Expr) `true`);
 opt[Expr] reduceBinary("==", (Expr) `empty`, (Expr) `empty`) = some((Expr) `true`);
-opt[Expr] reduceBinary("==", (Expr) `<Value v1>`, (Expr) `<Value v2>`) = some((Expr) `false`)
+opt[Expr] reduceBinary("==", (Expr) `<Value v1>`, (Expr) `<Value v2>`) = some((Expr) `false`) // TODO pure exprs
   when valueType(v1) != valueType(v2);
 
 opt[Expr] reduceBinary("+", (Expr) `<Numeric n1>`, (Expr) `<Numeric n2>`) = 
@@ -83,6 +86,11 @@ opt[Expr] reduceBinary("/", (Expr) `<Numeric n1>`, (Expr) `<Numeric n2>`) =
 
 opt[Expr] reduceBinary("\<", (Expr) `<Numeric n1>`, (Expr) `<Numeric n2>`) = 
   some(mkBoolExpr(ltFP(numericValue(n1), numericValue(n2))));
+opt[Expr] reduceBinary("\<", (Expr) `<Value v1>`, (Expr) `<Value v2>`) = some((Expr) `fail("BUG")`) // TODO pure exprs
+  when valueType(v1) != NumericType() || valueType(v2) != NumericType();
+
+opt[Expr] reduceBinary("string\<", (Expr) `<Value v1>`, (Expr) `<Value v2>`) = some((Expr) `fail("BUG")`)
+  when valueType(v1) != StringType() || valueType(v2) != StringType();
 
 default opt[Expr] reduceBinary(str s, Expr e1, Expr e2) = none();
 

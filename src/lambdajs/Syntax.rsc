@@ -310,7 +310,21 @@ Type literalType((Literal) `null`) = NullType();
 Type literalType((Literal) `empty`) = EmptyType();
 
 opt[Type] valueType((Value) `<Literal l>`) = some(literalType(l));
-opt[Type] valueType((Value) `<Id i>`) = none();
 opt[Type] valueType((Value) `func (<{Id ","}* ids>) {<Expr e>}`) = some(FunctionType());
+default opt[Type] valueType(Value v) = none();
 
+opt[Type] exprType((Expr) `<Value v>`) = valueType(v);
+opt[Type] exprType((Expr) `prim(<String s>, <Expr e1>, <Expr e2>)`) = some(binaryOpType(s));
+opt[Type] exprType((Expr) `prim(<String s>, <Expr e>)`) = some(unaryOpType(s));
+default opt[Type] exprType(Expr e) = none();
 
+Type binaryOpType("==") = BoolType();
+Type binaryOpType("===") = BoolType();
+Type binaryOpType("\<") = BoolType();
+Type binaryOpType("string\<") = BoolType();
+Type binaryOpType("+") = NumericType();
+Type binaryOpType("-") = NumericType();
+
+Type unaryOpType("-") = NumericType();
+Type unaryOpType("!") = BoolType();
+Type unaryOpType("prim-\>num") = NumericType();
