@@ -256,6 +256,9 @@ start syntax Env = env: EnvDef*;
 bool isValue((Expr)`<Value v>`) = true;
 default bool isValue(Expr e) = false;
 
+bool isId((Expr)`<Id i>`) = true;
+default bool isId(Expr e) = false;
+
 str charValue(Char c) {
   if (c has ch) return "<c>";
   else return ""; // TODO escape sequences

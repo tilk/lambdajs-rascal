@@ -14,7 +14,7 @@ start[Prog] process(loc envloc, start[Prog] prog) {
   prog = freshen(scope, prog);
   lf = letFuncs(env);
   lfs = mkSubst(lf);
-  prog = visit(prog) { case Expr e => substsAll(e, lfs) };
-  prog = visit(prog) { case Expr e => reduceAll(e) };
+//  prog = visit(prog) { case Expr e => substsAll(e, lfs) };
+  prog = visit(prog) { case Expr e => reduceAll(lfs, e) };
   return prog;
 }
